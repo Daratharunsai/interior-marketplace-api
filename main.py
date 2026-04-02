@@ -14,20 +14,20 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Interior Marketplace API")
 
-# --- NEW: CORS Configuration ---
+# 1. Define the allowed origins (Your Vercel Link + Localhost)
 origins = [
+    "https://my-frontend-ivory-theta.vercel.app",
     "http://localhost:3000",
-    "https://my-frontend-mu-one.vercel.app",  # Swap this later with your actual Vercel URL
 ]
 
+# 2. Add the middleware to the FastAPI app instance
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins,           # Allows your specific sites
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],              # Allows GET, POST, etc.
+    allow_headers=["*"],              # Allows all headers
 )
-# -------------------------------
 
 # Tell FastAPI where the wristbands are handed out
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
