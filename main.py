@@ -1,0 +1,98 @@
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from jose import jwt, JWTError
+
+import models
+import schemas
+import security
+from database import engine, get_db
+
+# Create tables if they don't exist
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="Interior Marketplace API")
+
+# --- NEW: CORS Configuration ---
+origins = [
+    "http://localhost:3000",
+    "https://my-frontend-mu-one.vercel.app",  # Swap this later with your actual Vercel URL
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# -------------------------------
+
+# Tell FastAPI where the wristbands are handed out
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+@app.get("/")
+def health_check():
+    return {"status": "online", "message": "API is running."}
+
+@app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    existing_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    hashed_pwd = security.get_password_hash(user.password)
+    new_user = models.User(email=user.email, hashed_password=hashed_pwd, role=user.role)
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+@app.post("/login", response_model=schemas.Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    
+    if not user or not security.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = security.create_access_token(data={"sub": str(user.id), "role": user.role})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# Tell FastAPI where the wristbands are handed out
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+# THE BOUNCER FUNCTION
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        # Decode the wristband to read the data inside
+        payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    # Look up the user in the database to make sure they still exist
+    user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+    if user is None:
+        raise credentials_exception
+        
+    return user
+
+# --- NEW PROTECTED ROUTE ---
+@app.get("/users/me", response_model=schemas.UserResponse)
+def get_my_profile(current_user: models.User = Depends(get_current_user)):
+    # Notice we don't have to search the database here! 
+    # The Bouncer (get_current_user) already did the hard work.
+    return current_user

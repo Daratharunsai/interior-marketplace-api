@@ -1,0 +1,11 @@
+# Environments
+.env
+venv/
+env/
+
+# Python Cache (Stops annoying temporary files from uploading)
+__pycache__/
+*.pyc
+
+# OS generated files
+.DS_Store
