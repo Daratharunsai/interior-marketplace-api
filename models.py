@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey , Float
 from sqlalchemy.orm import relationship
+
 from database import Base
 
 class User(Base):
@@ -20,5 +21,19 @@ class Vendor(Base):
     business_name = Column(String, unique=True, index=True, nullable=False)
     description = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    
+
     owner = relationship("User", back_populates="vendor_profile")
+    # --- NEW: Link the shop to its inventory ---
+    products = relationship("Product", back_populates="vendor")
+
+# --- NEW: Product Table ---
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    description = Column(String, nullable=True)
+    price = Column(Float, nullable=False)
+    vendor_id = Column(Integer, ForeignKey("vendors.id"))
+
+    vendor = relationship("Vendor", back_populates="products")

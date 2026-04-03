@@ -96,3 +96,69 @@ def get_my_profile(current_user: models.User = Depends(get_current_user)):
     # Notice we don't have to search the database here! 
     # The Bouncer (get_current_user) already did the hard work.
     return current_user
+
+# --- NEW: Add a Product ---
+@app.post("/products", response_model=schemas.ProductResponse, status_code=status.HTTP_201_CREATED)
+def create_product(
+    product: schemas.ProductCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    # 1. Check if they have permission
+    if current_user.role != "vendor":
+        raise HTTPException(status_code=403, detail="Only vendors can add products.")
+        
+    # 2. Check if they have actually opened a shop yet
+    vendor_profile = db.query(models.Vendor).filter(models.Vendor.user_id == current_user.id).first()
+    if not vendor_profile:
+        raise HTTPException(status_code=400, detail="You must create a vendor profile before adding products.")
+        
+    # 3. Create the product and link it to their shop ID
+    new_product = models.Product(
+        name=product.name,
+        description=product.description,
+        price=product.price,
+        vendor_id=vendor_profile.id
+    )
+    
+    db.add(new_product)
+    db.commit()
+    db.refresh(new_product)
+    
+    return new_product
+
+# --- NEW: Create Vendor Profile ---
+@app.post("/vendors/profile", response_model=schemas.VendorResponse, status_code=status.HTTP_201_CREATED)
+def create_vendor_profile(
+    vendor: schemas.VendorCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user) # <-- The Bouncer!
+):
+    # 1. Check if the user is actually a vendor
+    if current_user.role != "vendor":
+        raise HTTPException(status_code=403, detail="Only vendors can create a shop profile.")
+    
+    # 2. Check if they already have a shop profile
+    existing_profile = db.query(models.Vendor).filter(models.Vendor.user_id == current_user.id).first()
+    if existing_profile:
+        raise HTTPException(status_code=400, detail="You already have a vendor profile.")
+        
+    # 3. Create the new shop
+    new_vendor = models.Vendor(
+        business_name=vendor.business_name,
+        description=vendor.description,
+        user_id=current_user.id
+    )
+    
+    db.add(new_vendor)
+    db.commit()
+    db.refresh(new_vendor)
+    
+    return new_vendor
+
+# --- NEW: Public Storefront (View All Products) ---
+@app.get("/products", response_model=list[schemas.ProductResponse])
+def get_all_products(db: Session = Depends(get_db)):
+    # Fetch every single product from the database
+    products = db.query(models.Product).all()
+    return products
