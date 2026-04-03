@@ -47,3 +47,17 @@ class VendorResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- NEW: Shopping Cart Schemas ---
+class CartItemCreate(BaseModel):
+    product_id: int
+    quantity: int = 1  # Defaults to 1 if the frontend doesn't send a quantity
+
+class CartItemResponse(BaseModel):
+    id: int
+    user_id: int
+    product_id: int
+    quantity: int
+
+    class Config:
+        from_attributes = True

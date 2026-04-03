@@ -37,3 +37,16 @@ class Product(Base):
     vendor_id = Column(Integer, ForeignKey("vendors.id"))
 
     vendor = relationship("Vendor", back_populates="products")
+
+# --- NEW: Shopping Cart Table ---
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Integer, default=1)
+
+    # These relationships make it easy to look up who owns the cart and what the product is
+    user = relationship("User")
+    product = relationship("Product")
