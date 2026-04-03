@@ -33,3 +33,17 @@ class ProductResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- Vendor Schemas ---
+class VendorCreate(BaseModel):
+    business_name: str
+    description: str = None
+
+class VendorResponse(BaseModel):
+    id: int
+    business_name: str
+    description: str = None
+    user_id: int
+
+    class Config:
+        from_attributes = True
