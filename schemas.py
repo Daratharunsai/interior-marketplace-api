@@ -61,3 +61,10 @@ class CartItemResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- NEW: Nested Cart Schema ---
+class CartItemWithProduct(CartItemResponse):
+    product: ProductResponse  
+
+    class Config:
+        from_attributes = True

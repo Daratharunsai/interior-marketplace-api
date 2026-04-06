@@ -200,3 +200,13 @@ def add_to_cart(
     db.refresh(new_cart_item)
     
     return new_cart_item
+
+# --- NEW: View Shopping Cart ---
+@app.get("/cart", response_model=list[schemas.CartItemWithProduct])
+def get_cart(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    # Fetch only the cart items that belong to the logged-in user
+    cart_items = db.query(models.CartItem).filter(models.CartItem.user_id == current_user.id).all()
+    return cart_items
