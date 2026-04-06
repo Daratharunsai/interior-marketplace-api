@@ -275,3 +275,66 @@ def checkout(
     db.refresh(new_order)
     
     return new_order
+# --- NEW: Update a Product ---
+@app.put("/products/{product_id}", response_model=schemas.ProductResponse)
+def update_product(
+    product_id: int, 
+    updated_info: schemas.ProductUpdate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    # 1. Check if they are a vendor
+    if current_user.role != "vendor":
+        raise HTTPException(status_code=403, detail="Only vendors can edit products.")
+        
+    vendor_profile = db.query(models.Vendor).filter(models.Vendor.user_id == current_user.id).first()
+
+    # 2. Find the product
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found.")
+        
+    # 3. THE BOUNCER: Make sure they actually own this product!
+    if product.vendor_id != vendor_profile.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own products.")
+        
+    # 4. Apply the updates (only change what they actually sent)
+    if updated_info.name is not None:
+        product.name = updated_info.name
+    if updated_info.description is not None:
+        product.description = updated_info.description
+    if updated_info.price is not None:
+        product.price = updated_info.price
+        
+    db.commit()
+    db.refresh(product)
+    
+    return product
+
+# --- NEW: Delete a Product ---
+@app.delete("/products/{product_id}")
+def delete_product(
+    product_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    # 1. Check if they are a vendor
+    if current_user.role != "vendor":
+        raise HTTPException(status_code=403, detail="Only vendors can delete products.")
+        
+    vendor_profile = db.query(models.Vendor).filter(models.Vendor.user_id == current_user.id).first()
+
+    # 2. Find the product
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found.")
+        
+    # 3. THE BOUNCER: Make sure they own it!
+    if product.vendor_id != vendor_profile.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own products.")
+        
+    # 4. Delete it
+    db.delete(product)
+    db.commit()
+    
+    return {"message": "Product successfully deleted."}

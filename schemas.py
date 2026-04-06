@@ -88,3 +88,9 @@ class OrderResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- NEW: Product Update Schema ---
+class ProductUpdate(BaseModel):
+    name: str = None
+    description: str = None
+    price: float = None
