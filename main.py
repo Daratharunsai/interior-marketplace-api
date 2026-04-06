@@ -234,3 +234,44 @@ def remove_from_cart(
     db.commit()
     
     return {"message": "Item successfully removed from cart."}
+
+# --- NEW: Checkout ---
+@app.post("/checkout", response_model=schemas.OrderResponse)
+def checkout(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    # 1. Get everything in the user's cart
+    cart_items = db.query(models.CartItem).filter(models.CartItem.user_id == current_user.id).all()
+    
+    # 2. Stop them if the cart is empty
+    if not cart_items:
+        raise HTTPException(status_code=400, detail="Your cart is empty.")
+
+    # 3. Calculate the total price
+    total_amount = 0.0
+    for item in cart_items:
+        total_amount += item.product.price * item.quantity
+
+    # 4. Create the main Order (the receipt)
+    new_order = models.Order(user_id=current_user.id, total_amount=total_amount)
+    db.add(new_order)
+    db.commit()
+    db.refresh(new_order)
+
+    # 5. Move items from Cart to OrderItems, then delete from Cart
+    for item in cart_items:
+        order_item = models.OrderItem(
+            order_id=new_order.id,
+            product_id=item.product_id,
+            quantity=item.quantity,
+            price_at_purchase=item.product.price
+        )
+        db.add(order_item)
+        db.delete(item) # Remove it from the cart!
+
+    # 6. Save all these changes to the database
+    db.commit()
+    db.refresh(new_order)
+    
+    return new_order

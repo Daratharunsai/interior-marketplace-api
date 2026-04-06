@@ -68,3 +68,23 @@ class CartItemWithProduct(CartItemResponse):
 
     class Config:
         from_attributes = True
+
+# --- NEW: Order Schemas ---
+class OrderItemResponse(BaseModel):
+    id: int
+    product_id: int
+    quantity: int
+    price_at_purchase: float
+
+    class Config:
+        from_attributes = True
+
+class OrderResponse(BaseModel):
+    id: int
+    user_id: int
+    total_amount: float
+    status: str
+    items: list[OrderItemResponse] = []
+
+    class Config:
+        from_attributes = True

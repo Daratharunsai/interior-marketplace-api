@@ -49,3 +49,26 @@ class CartItem(Base):
 
     user = relationship("User")
     product = relationship("Product")
+
+# --- NEW: Order and OrderItem Tables ---
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    total_amount = Column(Float, nullable=False)
+    status = Column(String, default="completed") # In a real app, this might start as 'pending'
+
+    items = relationship("OrderItem", back_populates="order")
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    price_at_purchase = Column(Float, nullable=False) # Snapshot the price in case the vendor changes it later!
+
+    order = relationship("Order", back_populates="items")
+    product = relationship("Product")
