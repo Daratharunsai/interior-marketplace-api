@@ -16,7 +16,7 @@ app = FastAPI(title="Interior Marketplace API")
 
 # 1. Define the allowed origins (Your Vercel Link + Localhost)
 origins = [
-    "https://my-frontend-ivory-theta.vercel.app",
+    "https://my-frontend-5fvj4z5xq-akashrajgms-projects.vercel.app",
     "http://localhost:3000",
 ]
 
