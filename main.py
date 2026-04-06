@@ -162,3 +162,41 @@ def get_all_products(db: Session = Depends(get_db)):
     # Fetch every single product from the database
     products = db.query(models.Product).all()
     return products
+
+# --- NEW: Add to Cart ---
+@app.post("/cart", response_model=schemas.CartItemResponse)
+def add_to_cart(
+    item: schemas.CartItemCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    # 1. Check if the product exists
+    product = db.query(models.Product).filter(models.Product.id == item.product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found.")
+
+    # 2. Check if this exact product is ALREADY in their cart
+    existing_item = db.query(models.CartItem).filter(
+        models.CartItem.user_id == current_user.id,
+        models.CartItem.product_id == item.product_id
+    ).first()
+
+    if existing_item:
+        # Just increase the quantity
+        existing_item.quantity += item.quantity
+        db.commit()
+        db.refresh(existing_item)
+        return existing_item
+
+    # 3. Create a brand new cart item
+    new_cart_item = models.CartItem(
+        user_id=current_user.id,
+        product_id=item.product_id,
+        quantity=item.quantity
+    )
+    
+    db.add(new_cart_item)
+    db.commit()
+    db.refresh(new_cart_item)
+    
+    return new_cart_item

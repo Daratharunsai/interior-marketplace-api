@@ -51,7 +51,7 @@ class VendorResponse(BaseModel):
 # --- NEW: Shopping Cart Schemas ---
 class CartItemCreate(BaseModel):
     product_id: int
-    quantity: int = 1  # Defaults to 1 if the frontend doesn't send a quantity
+    quantity: int = 1
 
 class CartItemResponse(BaseModel):
     id: int
