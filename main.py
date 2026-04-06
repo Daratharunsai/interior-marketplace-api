@@ -210,3 +210,27 @@ def get_cart(
     # Fetch only the cart items that belong to the logged-in user
     cart_items = db.query(models.CartItem).filter(models.CartItem.user_id == current_user.id).all()
     return cart_items
+
+# --- NEW: Remove Item from Cart ---
+@app.delete("/cart/{cart_item_id}")
+def remove_from_cart(
+    cart_item_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    # 1. Find the specific cart item in the database
+    cart_item = db.query(models.CartItem).filter(models.CartItem.id == cart_item_id).first()
+    
+    # 2. Check if it actually exists
+    if not cart_item:
+        raise HTTPException(status_code=404, detail="Cart item not found.")
+        
+    # 3. THE BOUNCER'S SECURITY CHECK: Make sure the logged-in user owns this item
+    if cart_item.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to remove this item.")
+        
+    # 4. Delete it from the database
+    db.delete(cart_item)
+    db.commit()
+    
+    return {"message": "Item successfully removed from cart."}
