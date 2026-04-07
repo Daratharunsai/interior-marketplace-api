@@ -3,6 +3,8 @@ from datetime import timedelta
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
+# Change it to look exactly like this:
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
@@ -108,13 +110,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
         
     return user
-
-# --- NEW PROTECTED ROUTE ---
-@app.get("/users/me", response_model=schemas.UserResponse)
-def get_my_profile(current_user: models.User = Depends(get_current_user)):
-    # Notice we don't have to search the database here! 
-    # The Bouncer (get_current_user) already did the hard work.
-    return current_user
 
 # --- NEW: Add a Product ---
 @app.post("/products", response_model=schemas.ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -385,3 +380,46 @@ def read_current_user(
             }
             
     return user_data
+
+# ------------------------------------------------
+# PRODUCTS & STOREFRONT
+# ------------------------------------------------
+
+# 2. UPGRADE: Product Creation with Image Support
+@app.post("/products", status_code=status.HTTP_201_CREATED)
+async def create_product(
+    name: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    image: UploadFile = File(...), 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    if current_user.role != "vendor":
+        raise HTTPException(status_code=403, detail="Only vendors can add products.")
+    
+    vendor_profile = db.query(models.Vendor).filter(models.Vendor.user_id == current_user.id).first()
+    
+    # Logic to save image locally or to Cloudinary would go here
+    image_url = f"https://your-storage.com/{image.filename}" 
+
+    new_product = models.Product(
+        name=name,
+        description=description,
+        price=price,
+        image_url=image_url,
+        vendor_id=vendor_profile.id
+    )
+    db.add(new_product)
+    db.commit()
+    return new_product
+
+# ------------------------------------------------
+# AI INTEGRATION
+# ------------------------------------------------
+
+# 3. NEW: The AI Description Bridge
+@app.post("/ai/analyze-image")
+async def analyze_image(image: UploadFile = File(...)):
+    # This is where we will plug in the Gemini API key later!
+    return {"suggested_description": "A masterclass in sculptural comfort..."}
