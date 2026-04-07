@@ -16,20 +16,17 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Interior Marketplace API")
 
-# 1. Define the allowed origins (Your Vercel Link + Localhost)
-origins = [
-    "https://curated-space-944l.vercel.app",
-    "http://localhost:5173",
-    
-]
-
-# 2. Add the middleware to the FastAPI app instance
+# THE SILVER BULLET CONFIG
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,           # Allows your specific sites
+    allow_origins=[
+        "http://localhost:5173",
+        "https://curated-space-944l.vercel.app"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],              # Allows GET, POST, etc.
-    allow_headers=["*"],              # Allows all headers
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Explicitly added OPTIONS
+    allow_headers=["*"],
+    expose_headers=["*"] # This is the missing piece for some browsers!
 )
 
 # Tell FastAPI where the wristbands are handed out
