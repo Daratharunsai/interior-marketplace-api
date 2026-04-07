@@ -18,8 +18,9 @@ app = FastAPI(title="Interior Marketplace API")
 
 # 1. Define the allowed origins (Your Vercel Link + Localhost)
 origins = [
-    "http://localhost:5173",
     "https://curated-space-944l.vercel.app",
+    "http://localhost:5173",
+    
 ]
 
 # 2. Add the middleware to the FastAPI app instance
