@@ -1,9 +1,9 @@
 from pydantic import BaseModel, EmailStr
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    email: str
     password: str
-    role: str = "user"
+    role: str = "customer"  # <-- ADD THIS LI
 
 class UserResponse(BaseModel):
     id: int
@@ -94,3 +94,11 @@ class ProductUpdate(BaseModel):
     name: str = None
     description: str = None
     price: float = None
+
+# --- NEW: Phone Auth Schemas ---
+class PhoneOTPRequest(BaseModel):
+    phone_number: str
+
+class PhoneOTPVerify(BaseModel):
+    phone_number: str
+    otp: str

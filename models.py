@@ -12,6 +12,10 @@ class User(Base):
     role = Column(String, default="user") 
     is_active = Column(Boolean, default=True)
 
+    # --- NEW COLUMNS FOR PHONE AUTH ---
+    phone_number = Column(String, unique=True, index=True, nullable=True)
+    otp_code = Column(String, nullable=True)
+
     vendor_profile = relationship("Vendor", back_populates="owner", uselist=False)
 
 class Vendor(Base):
