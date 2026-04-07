@@ -67,33 +67,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# 👇 HERE IS YOUR NEW ENDPOINT 👇
 
-@app.get("/users/me")
-def read_current_user(
-    current_user: models.User = Depends(get_current_user), 
-    db: Session = Depends(get_db)
-):
-    # Base user data
-    user_data = {
-        "id": current_user.id,
-        "email": current_user.email,
-        "role": current_user.role,
-        "phone_number": current_user.phone_number,
-        "vendor_profile": None
-    }
-    
-    # If they are a vendor, fetch their shop details and attach it!
-    if current_user.role == "vendor":
-        shop = db.query(models.Vendor).filter(models.Vendor.user_id == current_user.id).first()
-        if shop:
-            user_data["vendor_profile"] = {
-                "id": shop.id,
-                "business_name": shop.business_name,
-                "description": shop.description
-            }
-            
-    return user_data
 
 # --- NEW: Step 2 - Verify OTP and Login (Matched to your code!) ---
 @app.post("/auth/phone/verify-otp", response_model=schemas.Token)
@@ -385,3 +359,31 @@ def delete_product(
     db.commit()
     
     return {"message": "Product successfully deleted."}
+
+# 👇 HERE IS YOUR NEW ENDPOINT 👇
+
+@app.get("/users/me")
+def read_current_user(
+    current_user: models.User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    # Base user data
+    user_data = {
+        "id": current_user.id,
+        "email": current_user.email,
+        "role": current_user.role,
+        "phone_number": current_user.phone_number,
+        "vendor_profile": None
+    }
+    
+    # If they are a vendor, fetch their shop details and attach it!
+    if current_user.role == "vendor":
+        shop = db.query(models.Vendor).filter(models.Vendor.user_id == current_user.id).first()
+        if shop:
+            user_data["vendor_profile"] = {
+                "id": shop.id,
+                "business_name": shop.business_name,
+                "description": shop.description
+            }
+            
+    return user_data
