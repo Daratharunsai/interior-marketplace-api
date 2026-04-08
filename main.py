@@ -1,5 +1,6 @@
 import random
 import os
+import uvicorn
 import shutil
 from fastapi.staticfiles import StaticFiles
 from datetime import timedelta
@@ -465,3 +466,14 @@ async def create_product(
 async def analyze_image(image: UploadFile = File(...)):
     # This is where we will plug in the Gemini API key later!
     return {"suggested_description": "A masterclass in sculptural comfort..."}
+
+# --- ADD TO VERY BOTTOM OF main.py ---
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    
+    # This forces Python to pull Render's exact port, or default to 10000
+    port = int(os.environ.get("PORT", 10000))
+    
+    # This completely bypasses the command line and forces the server open
+    uvicorn.run(app, host="0.0.0.0", port=port)
