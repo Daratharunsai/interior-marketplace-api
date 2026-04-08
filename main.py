@@ -1,4 +1,7 @@
 import random
+import os
+import shutil
+from fastapi.staticfiles import StaticFiles
 from datetime import timedelta
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -21,6 +24,11 @@ from database import engine, get_db
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Interior Marketplace API")
+
+# --- ADD THIS TO SERVE IMAGES ---
+os.makedirs("static/images", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+# --------------------------------
 
 # THE SILVER BULLET CONFIG
 app.add_middleware(
@@ -115,10 +123,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         
     return user
 
-# --- NEW: Add a Product ---
-@app.post("/products", response_model=schemas.ProductResponse, status_code=status.HTTP_201_CREATED)
+# --- NEW: Add a Product (UPGRADED FOR IMAGES) ---
+@app.post("/products", status_code=status.HTTP_201_CREATED)
 def create_product(
-    product: schemas.ProductCreate, 
+    name: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    image: UploadFile = File(...), 
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(get_current_user)
 ):
@@ -131,11 +142,20 @@ def create_product(
     if not vendor_profile:
         raise HTTPException(status_code=400, detail="You must create a vendor profile before adding products.")
         
-    # 3. Create the product and link it to their shop ID
+    # 3. Save the actual image file to the backend server
+    file_location = f"static/images/{image.filename}"
+    with open(file_location, "wb+") as file_object:
+        shutil.copyfileobj(image.file, file_object)
+
+    # 4. Create the real URL that the frontend can use to view it
+    image_url = f"/static/images/{image.filename}" 
+
+    # 5. Create the product and link it to their shop ID
     new_product = models.Product(
-        name=product.name,
-        description=product.description,
-        price=product.price,
+        name=name,
+        description=description,
+        price=price,
+        image_url=image_url,
         vendor_id=vendor_profile.id
     )
     
