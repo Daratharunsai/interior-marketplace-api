@@ -14,7 +14,7 @@ import security
 from database import engine, get_db
 
 ### --- TEMPORARY DATABASE NUKE ---
-models.Base.metadata.drop_all(bind=engine)  # <-- ADD THIS LINE
+#models.Base.metadata.drop_all(bind=engine)  # <-- ADD THIS LINE
 ###-------------------------------
 
 # Create tables if they don't exist
