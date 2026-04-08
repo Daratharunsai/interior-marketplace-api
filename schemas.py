@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 class UserCreate(BaseModel):
@@ -7,12 +8,19 @@ class UserCreate(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
-    email: EmailStr
+    email: str
     role: str
     is_active: bool
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+# 2. NEW: Create a blueprint for UPDATING a profile
+class UserUpdate(BaseModel):
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str

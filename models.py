@@ -14,6 +14,7 @@ class User(Base):
 
     # --- NEW COLUMNS FOR PHONE AUTH ---
     phone_number = Column(String, unique=True, index=True, nullable=True)
+    address = Column(String, nullable=True)  
     otp_code = Column(String, nullable=True)
 
     vendor_profile = relationship("Vendor", back_populates="owner", uselist=False)

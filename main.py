@@ -14,7 +14,7 @@ import security
 from database import engine, get_db
 
 ### --- TEMPORARY DATABASE NUKE ---
-#models.Base.metadata.drop_all(bind=engine)  # <-- ADD THIS LINE
+models.Base.metadata.drop_all(bind=engine)  # <-- ADD THIS LINE
 ###-------------------------------
 
 # Create tables if they don't exist
@@ -370,6 +370,7 @@ def read_current_user(
         "email": current_user.email,
         "role": current_user.role,
         "phone_number": current_user.phone_number,
+        "address": current_user.address,
         "vendor_profile": None
     }
     
@@ -384,6 +385,23 @@ def read_current_user(
             }
             
     return user_data
+
+# --- NEW: Update Current User Profile ---
+@app.patch("/users/me", response_model=schemas.UserResponse)
+def update_current_user(
+    user_update: schemas.UserUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Update only the fields that Akash actually sent
+    if user_update.address is not None:
+        current_user.address = user_update.address
+    if user_update.phone_number is not None:
+        current_user.phone_number = user_update.phone_number
+        
+    db.commit()
+    db.refresh(current_user)
+    return current_user
 
 # ------------------------------------------------
 # PRODUCTS & STOREFRONT
